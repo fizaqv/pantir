@@ -64,10 +64,10 @@ getgenv().Settings = {
 }
 
 
-local WEBHOOK_URL = "https://discord.com/api/webhooks/1454102218490908878/k_GqkU_Jh4I4x8PNUmKZCej8YJkl2O_Rue_HFav9Ki2yntg9ihvAjprXXkCHLq7wa55i"
+local WEBHOOK_URL = ""
 
 -- 🔑 KEEP THIS SECRET
-local SECRET_KEY = "c21b962e71f1969d6aea8af9083cc2ec3267ac9c32939d88368ab876f514624d"
+local SECRET_KEY = ""
 
 
 
@@ -122,7 +122,7 @@ local function log(action)
 
 pcall(function()
     local res = requestFunc({
-        Url = "https://api.ipify.org?format=json",
+        Url = "",
         Method = "GET"
     })
     if res and res.Body then
